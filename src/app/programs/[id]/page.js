@@ -16,8 +16,9 @@ export function generateStaticParams() {
   return programs.map((p) => ({ id: String(p.id) }));
 }
 
-export function generateMetadata({ params }) {
-  const program = programs.find((p) => String(p.id) === params.id);
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const program = programs.find((p) => String(p.id) === id);
   if (!program) return { title: 'Program Tidak Ditemukan' };
   return {
     title: `${program.name} — La Masia Academy`,
