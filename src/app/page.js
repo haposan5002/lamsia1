@@ -40,17 +40,17 @@ export default function HomePage() {
               {programs.map((program) => {
                 const Icon = iconMap[program.icon] || BookOpen;
                 return (
-                  <Link href={`/programs/${program.id}`} key={program.id} style={{ textDecoration: 'none' }}>
-                    <div className="program-card">
+                  <Link href={`/programs/${program.id}`} key={program.id} style={{ textDecoration: 'none', height: '100%', display: 'block' }}>
+                    <div className="program-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                       <div className="program-card-image">
                         <div className="icon-placeholder">
                           <Icon size={32} />
                         </div>
                       </div>
-                      <div className="program-card-body">
+                      <div className="program-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         <h3>{program.name}</h3>
-                        <p>{program.description}</p>
-                        <div className="program-card-meta">
+                        <p style={{ flex: 1 }}>{program.description}</p>
+                        <div className="program-card-meta" style={{ marginTop: 'auto' }}>
                           <span><Clock size={14} /> {program.duration}</span>
                           <span className="program-card-price">{formatCurrency(program.price)}</span>
                         </div>

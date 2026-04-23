@@ -119,7 +119,7 @@ export default function ProgramsPage() {
               {filteredPrograms.map((program) => {
                 const Icon = iconMap[program.icon] || BookOpen;
                 return (
-                  <div className="program-card" key={program.id}>
+                  <div className="program-card" key={program.id} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <div className="program-card-image">
                       <div className="icon-placeholder">
                         <Icon size={32} />
@@ -147,13 +147,13 @@ export default function ProgramsPage() {
                         ))}
                       </div>
                     </div>
-                    <div className="program-card-body">
+                    <div className="program-card-body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <h3>{program.name}</h3>
                       <p>{program.description}</p>
                       
                       <ul style={{ 
                         listStyle: 'none', display: 'flex', flexDirection: 'column', 
-                        gap: 'var(--space-2)', marginBottom: 'var(--space-4)' 
+                        gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flex: 1 
                       }}>
                         {program.features.map((feature, i) => (
                           <li key={i} style={{ 

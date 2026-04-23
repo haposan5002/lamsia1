@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { materials as initialMaterials, programs, students, formatDateTime } from '@/lib/data';
+import { materials as initialMaterials, programs, students, formatDateTime, getRandomQuestions, getKelasForJenjang } from '@/lib/data';
 import {
   Lock, Unlock, FileText, Video, Brain, Plus, Search, Upload,
   Users, X, CheckSquare, Square, UserCheck, Pencil, Trash2,
@@ -21,13 +21,16 @@ const typeLabels = {
 };
 
 // ─── Reusable: Student Selector ────────────────────────────────────────────
-function StudentSelector({ programId, selectedStudents, onChange }) {
-  const available = programId
-    ? students.filter(s => s.programIds?.includes(Number(programId)) || s.programId === Number(programId))
-    : [];
-
-  // fallback: jika students tidak punya programIds, coba langsung tampilkan semua
-  const allStudents = available.length > 0 ? available : (programId ? students : []);
+function StudentSelector({ programId, kelas, selectedStudents, onChange }) {
+  let allStudents = [];
+  if (programId) {
+    allStudents = students.filter(s => s.programIds?.includes(Number(programId)) || s.programId === Number(programId));
+    if (allStudents.length === 0) allStudents = students; // fallback
+    
+    if (kelas) {
+      allStudents = allStudents.filter(s => String(s.kelas) === String(kelas));
+    }
+  }
 
   const allSelected =
     allStudents.length > 0 && allStudents.every(s => selectedStudents.includes(s.id));
@@ -245,9 +248,13 @@ function EditModal({ material, onClose, onSave }) {
   const [form, setForm] = useState({
     title: material.title,
     programId: String(material.programId),
+    kelas: material.kelas ? String(material.kelas) : '',
     type: material.type,
     selectedStudents: [...(material.assignedStudentIds || [])],
   });
+
+  const selectedProgram = programs.find(p => p.id === Number(form.programId));
+  const availableClasses = selectedProgram ? getKelasForJenjang(selectedProgram.jenjang) : [];
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -255,6 +262,7 @@ function EditModal({ material, onClose, onSave }) {
     onSave({
       title: form.title,
       programId: Number(form.programId),
+      kelas: form.kelas ? Number(form.kelas) : null,
       type: form.type,
       assignedStudentIds: form.selectedStudents,
     });
@@ -293,7 +301,7 @@ function EditModal({ material, onClose, onSave }) {
               <select
                 className="form-select"
                 value={form.programId}
-                onChange={e => setForm({ ...form, programId: e.target.value, selectedStudents: [] })}
+                onChange={e => setForm({ ...form, programId: e.target.value, kelas: '', selectedStudents: [] })}
                 required
               >
                 <option value="">Pilih Program</option>
@@ -302,6 +310,21 @@ function EditModal({ material, onClose, onSave }) {
                 ))}
               </select>
             </div>
+            {form.programId && (
+              <div className="form-group">
+                <label className="form-label">Kelas (Opsional)</label>
+                <select
+                  className="form-select"
+                  value={form.kelas}
+                  onChange={e => setForm({ ...form, kelas: e.target.value, selectedStudents: [] })}
+                >
+                  <option value="">Semua Kelas</option>
+                  {availableClasses.map(k => (
+                    <option key={k} value={k}>Kelas {k}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label">Tipe</label>
               <select
@@ -318,6 +341,7 @@ function EditModal({ material, onClose, onSave }) {
 
           <StudentSelector
             programId={form.programId}
+            kelas={form.kelas}
             selectedStudents={form.selectedStudents}
             onChange={sel => setForm({ ...form, selectedStudents: sel })}
           />
@@ -448,13 +472,14 @@ function RecipientsModal({ material, onClose }) {
 // ─── Halaman Utama ──────────────────────────────────────────────────────────
 export default function MaterialsPage() {
   const [materialsData, setMaterialsData] = useState(initialMaterials);
-  const [programFilter, setProgramFilter] = useState('all');
+  const [selectedProgramId, setSelectedProgramId] = useState(1);
+  const [kelasFilter, setKelasFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   // Add form state
   const [showAdd, setShowAdd] = useState(false);
   const [newMaterial, setNewMaterial] = useState({
-    title: '', programId: '', type: 'document', isLocked: false, selectedStudents: [],
+    title: '', programId: '', kelas: '', type: 'document', isLocked: false, selectedStudents: [], videoUrl: ''
   });
 
   // Modal states
@@ -464,10 +489,19 @@ export default function MaterialsPage() {
   const [viewRecipients, setViewRecipients] = useState(null);
 
   const filtered = materialsData.filter(m => {
-    const matchProg = programFilter === 'all' || m.programId === Number(programFilter);
-    const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());
-    return matchProg && matchSearch;
+    const matchProg = m.programId === Number(selectedProgramId);
+    const matchKelas = kelasFilter === 'all' || m.kelas === Number(kelasFilter);
+    
+    const searchLower = search.toLowerCase();
+    const matchTitle = m.title.toLowerCase().includes(searchLower);
+    
+    const assignedStudents = students.filter(s => (m.assignedStudentIds || []).includes(s.id));
+    const matchStudent = assignedStudents.some(s => s.name.toLowerCase().includes(searchLower));
+
+    return matchProg && matchKelas && (matchTitle || matchStudent);
   });
+
+  const currentProgram = programs.find(p => p.id === selectedProgramId);
 
   // ── Handlers ──
   const handleDelete = (id) => {
@@ -488,18 +522,31 @@ export default function MaterialsPage() {
   const handleAddMaterial = (e) => {
     e.preventDefault();
     if (newMaterial.selectedStudents.length === 0) return;
+    
+    let fileUrl = `/materials/new-${Date.now()}.pdf`;
+    let additionalProps = {};
+
+    if (newMaterial.type === 'video') {
+      fileUrl = newMaterial.videoUrl;
+    } else if (newMaterial.type === 'quiz') {
+      fileUrl = null;
+      additionalProps.questions = getRandomQuestions(Number(newMaterial.programId), 10);
+    }
+
     const newItem = {
       id: Date.now(),
       programId: Number(newMaterial.programId),
+      kelas: newMaterial.kelas ? Number(newMaterial.kelas) : null,
       title: newMaterial.title,
-      fileUrl: `/materials/new-${Date.now()}.pdf`,
+      fileUrl: fileUrl,
       type: newMaterial.type,
       isLocked: newMaterial.isLocked,
       unlockAt: null,
       assignedStudentIds: [...newMaterial.selectedStudents],
+      ...additionalProps
     };
     setMaterialsData(prev => [...prev, newItem]);
-    setNewMaterial({ title: '', programId: '', type: 'document', isLocked: false, selectedStudents: [] });
+    setNewMaterial({ title: '', programId: '', kelas: '', type: 'document', isLocked: false, selectedStudents: [], videoUrl: '' });
     setShowAdd(false);
   };
 
@@ -536,13 +583,30 @@ export default function MaterialsPage() {
                 <select
                   className="form-select"
                   value={newMaterial.programId}
-                  onChange={e => setNewMaterial({ ...newMaterial, programId: e.target.value, selectedStudents: [] })}
+                  onChange={e => setNewMaterial({ ...newMaterial, programId: e.target.value, kelas: '', selectedStudents: [] })}
                   required
                 >
                   <option value="">Pilih Program</option>
                   {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
+
+              {newMaterial.programId && (
+                <div className="form-group">
+                  <label className="form-label">Kelas (Opsional)</label>
+                  <select
+                    className="form-select"
+                    value={newMaterial.kelas}
+                    onChange={e => setNewMaterial({ ...newMaterial, kelas: e.target.value, selectedStudents: [] })}
+                  >
+                    <option value="">Semua Kelas</option>
+                    {getKelasForJenjang(programs.find(p => p.id === Number(newMaterial.programId))?.jenjang).map(k => (
+                      <option key={k} value={k}>Kelas {k}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">Tipe</label>
                 <select
@@ -557,19 +621,35 @@ export default function MaterialsPage() {
                 </select>
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label">File</label>
-                <label className="file-upload-area" style={{ padding: 'var(--space-4)' }}>
-                  <input type="file" style={{ display: 'none' }} />
-                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-500)' }}>
-                    <Upload size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-                    Klik untuk upload file
-                  </span>
-                </label>
+                <label className="form-label">Media / File</label>
+                {newMaterial.type === 'video' ? (
+                  <input
+                    type="url" className="form-input" placeholder="Masukkan Link YouTube (Contoh: https://youtube.com/watch?v=...)"
+                    value={newMaterial.videoUrl}
+                    onChange={e => setNewMaterial({ ...newMaterial, videoUrl: e.target.value })}
+                    required
+                  />
+                ) : newMaterial.type === 'quiz' ? (
+                  <div style={{ padding: 'var(--space-4)', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500 }}>
+                      <Brain size={16} /> Sistem akan meng-generate 10 soal secara acak dari Bank Soal untuk kuis ini.
+                    </span>
+                  </div>
+                ) : (
+                  <label className="file-upload-area" style={{ padding: 'var(--space-4)' }}>
+                    <input type="file" style={{ display: 'none' }} />
+                    <span style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-500)' }}>
+                      <Upload size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                      Klik untuk upload file PDF
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
 
             <StudentSelector
               programId={newMaterial.programId}
+              kelas={newMaterial.kelas}
               selectedStudents={newMaterial.selectedStudents}
               onChange={sel => setNewMaterial({ ...newMaterial, selectedStudents: sel })}
             />
@@ -594,23 +674,54 @@ export default function MaterialsPage() {
         </div>
       )}
 
+      {/* Program Tabs */}
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
+        {programs.map(p => {
+          const isActive = selectedProgramId === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => { setSelectedProgramId(p.id); setSearch(''); setKelasFilter('all'); setShowAdd(false); }}
+              style={{
+                padding: 'var(--space-3) var(--space-5)',
+                borderRadius: 'var(--radius-lg)',
+                border: `2px solid ${isActive ? 'var(--primary)' : 'var(--cream-200)'}`,
+                background: isActive ? 'var(--primary)' : 'white',
+                color: isActive ? 'white' : 'var(--neutral-700)',
+                fontWeight: 600,
+                fontSize: 'var(--text-sm)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+              }}
+            >
+              <FileText size={16} />
+              {p.name.replace('Bimbingan Belajar ', '')}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--neutral-400)' }} />
           <input
-            type="text" className="form-input" placeholder="Cari materi..."
+            type="text" className="form-input" placeholder="Cari materi atau nama siswa..."
             value={search} onChange={e => setSearch(e.target.value)}
             style={{ paddingLeft: 36 }}
           />
         </div>
         <select
-          className="form-select" value={programFilter}
-          onChange={e => setProgramFilter(e.target.value)}
-          style={{ width: 220 }}
+          className="form-select"
+          value={kelasFilter}
+          onChange={e => setKelasFilter(e.target.value)}
+          style={{ width: 150 }}
         >
-          <option value="all">Semua Program</option>
-          {programs.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          <option value="all">Semua Kelas</option>
+          {getKelasForJenjang(currentProgram?.jenjang).map(k => (
+            <option key={k} value={k}>Kelas {k}</option>
+          ))}
         </select>
       </div>
 
@@ -631,7 +742,14 @@ export default function MaterialsPage() {
               {/* Info */}
               <div className="material-info" style={{ flex: 1 }}>
                 <h4>{material.title}</h4>
-                <p>{program?.name || '—'} • {typeLabels[material.type]}</p>
+                <div style={{ display: 'flex', gap: 'var(--space-2)', margin: '4px 0', flexWrap: 'wrap' }}>
+                  {material.kelas && (
+                    <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: 'var(--cream-100)', color: 'var(--primary)', borderRadius: 'var(--radius-sm)' }}>
+                      Kelas {material.kelas}
+                    </span>
+                  )}
+                  <p style={{ margin: 0, fontSize: 'var(--text-xs)' }}>{program?.name || '—'} • {typeLabels[material.type]}</p>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-1)', flexWrap: 'wrap' }}>
                   {/* Status badge */}
                   <span className={`badge ${material.isLocked ? 'badge-locked' : 'badge-approved'}`}>

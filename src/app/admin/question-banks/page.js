@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { questionBanks as initialBanks, programs, getKelasForJenjang, getMataPelajaranList } from '@/lib/data';
 import {
-  Brain, Plus, Search, X, Pencil, Trash2, CheckSquare, Square,
-  AlertTriangle, BookOpen, ChevronDown, ChevronUp, Image as ImageIcon, Music, Upload, Filter, Tag
+  Brain, Plus, Search, X, Pencil, Trash2, CheckSquare,
+  AlertTriangle, BookOpen, ChevronDown, ChevronUp, Image as ImageIcon, Volume2
 } from 'lucide-react';
 
 export default function QuestionBanksPage() {
@@ -16,47 +16,20 @@ export default function QuestionBanksPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedQuestion, setExpandedQuestion] = useState(null);
 
-  // Filter state
-  const [filterJenjang, setFilterJenjang] = useState('');
-  const [filterKelas, setFilterKelas] = useState('');
-  const [filterMapel, setFilterMapel] = useState('');
-
-  // Bulk selection state
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [showBulkModal, setShowBulkModal] = useState(false);
-  const [bulkJenjang, setBulkJenjang] = useState('');
-  const [bulkKelas, setBulkKelas] = useState('');
-  const [bulkMapel, setBulkMapel] = useState('');
+  const [kelasFilter, setKelasFilter] = useState('all');
 
   // New question form
   const [newQuestion, setNewQuestion] = useState({
-    text: '', options: ['', '', '', ''], correctIndex: 0,
-    jenjang: '', kelas: '', mataPelajaran: '',
-    imageUrl: '', audioUrl: ''
+    text: '', options: ['', '', '', ''], correctIndex: 0, imageUrl: '', audioUrl: '', kelas: '', mataPelajaran: ''
   });
-
-  const handleFileUpload = (e, targetState, setTargetState, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setTargetState({ ...targetState, [field]: url });
-    }
-  };
 
   const currentBank = banks.find(b => b.programId === selectedProgramId);
   const questions = currentBank?.questions || [];
   const filteredQuestions = questions.filter(q => {
-    if (search && !q.text.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterJenjang && q.jenjang !== filterJenjang) return false;
-    if (filterKelas && q.kelas !== Number(filterKelas)) return false;
-    if (filterMapel && q.mataPelajaran !== filterMapel) return false;
-    return true;
+    const matchSearch = q.text.toLowerCase().includes(search.toLowerCase());
+    const matchKelas = kelasFilter === 'all' || q.kelas === Number(kelasFilter);
+    return matchSearch && matchKelas;
   });
-
-  const filterKelasOptions = filterJenjang ? getKelasForJenjang(filterJenjang) : [];
-  const filterMapelOptions = filterJenjang ? getMataPelajaranList(filterJenjang) : [];
-  const bulkKelasOptions = bulkJenjang ? getKelasForJenjang(bulkJenjang) : [];
-  const bulkMapelOptions = bulkJenjang ? getMataPelajaranList(bulkJenjang) : [];
 
   const maxQuestions = 100;
   const canAddMore = questions.length < maxQuestions;
@@ -67,43 +40,39 @@ export default function QuestionBanksPage() {
     if (newQuestion.options.some(o => o.trim() === '')) return;
 
     const newId = Date.now();
-    const bankJenjang = banks.find(b => b.programId === selectedProgramId)?.jenjang || '';
     setBanks(prev => prev.map(b => {
       if (b.programId !== selectedProgramId) return b;
       return {
         ...b,
-        questions: [...b.questions, {
-          id: newId,
-          text: newQuestion.text,
-          options: [...newQuestion.options],
-          correctIndex: newQuestion.correctIndex,
-          jenjang: newQuestion.jenjang || bankJenjang,
-          kelas: newQuestion.kelas ? Number(newQuestion.kelas) : null,
-          mataPelajaran: newQuestion.mataPelajaran || '',
-          imageUrl: newQuestion.imageUrl,
-          audioUrl: newQuestion.audioUrl,
-        }]
+        questions: [...b.questions, { id: newId, text: newQuestion.text, options: [...newQuestion.options], correctIndex: newQuestion.correctIndex, imageUrl: newQuestion.imageUrl, audioUrl: newQuestion.audioUrl, jenjang: currentBank.jenjang, kelas: Number(newQuestion.kelas), mataPelajaran: newQuestion.mataPelajaran }]
       };
     }));
-    setNewQuestion({ text: '', options: ['', '', '', ''], correctIndex: 0, jenjang: '', kelas: '', mataPelajaran: '', imageUrl: '', audioUrl: '' });
+    setNewQuestion({ text: '', options: ['', '', '', ''], correctIndex: 0, imageUrl: '', audioUrl: '', kelas: '', mataPelajaran: '' });
     setShowAddQuestion(false);
   };
 
-  const handleBulkTag = () => {
-    if (!bulkJenjang || selectedIds.length === 0) return;
-    setBanks(prev => prev.map(b => ({
-      ...b,
-      questions: b.questions.map(q =>
-        selectedIds.includes(q.id)
-          ? { ...q, jenjang: bulkJenjang, kelas: bulkKelas ? Number(bulkKelas) : q.kelas, mataPelajaran: bulkMapel || q.mataPelajaran }
-          : q
-      )
-    })));
-    setSelectedIds([]);
-    setShowBulkModal(false);
-    setBulkJenjang('');
-    setBulkKelas('');
-    setBulkMapel('');
+  const handleImageUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      if (isEdit) {
+        setEditingQuestion(prev => ({ ...prev, imageUrl: url }));
+      } else {
+        setNewQuestion(prev => ({ ...prev, imageUrl: url }));
+      }
+    }
+  };
+
+  const handleAudioUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      if (isEdit) {
+        setEditingQuestion(prev => ({ ...prev, audioUrl: url }));
+      } else {
+        setNewQuestion(prev => ({ ...prev, audioUrl: url }));
+      }
+    }
   };
 
   const handleEditQuestion = (e) => {
@@ -115,7 +84,7 @@ export default function QuestionBanksPage() {
         ...b,
         questions: b.questions.map(q =>
           q.id === editingQuestion.id
-            ? { ...q, text: editingQuestion.text, options: [...editingQuestion.options], correctIndex: editingQuestion.correctIndex, imageUrl: editingQuestion.imageUrl, audioUrl: editingQuestion.audioUrl, jenjang: editingQuestion.jenjang || '', kelas: editingQuestion.kelas ? Number(editingQuestion.kelas) : null, mataPelajaran: editingQuestion.mataPelajaran || '' }
+            ? { ...q, text: editingQuestion.text, options: [...editingQuestion.options], correctIndex: editingQuestion.correctIndex, imageUrl: editingQuestion.imageUrl, audioUrl: editingQuestion.audioUrl, kelas: Number(editingQuestion.kelas), mataPelajaran: editingQuestion.mataPelajaran }
             : q
         )
       };
@@ -160,7 +129,7 @@ export default function QuestionBanksPage() {
           return (
             <button
               key={p.id}
-              onClick={() => { setSelectedProgramId(p.id); setSearch(''); setShowAddQuestion(false); setEditingQuestion(null); }}
+              onClick={() => { setSelectedProgramId(p.id); setSearch(''); setKelasFilter('all'); setShowAddQuestion(false); setEditingQuestion(null); }}
               style={{
                 padding: 'var(--space-3) var(--space-5)',
                 borderRadius: 'var(--radius-lg)',
@@ -213,8 +182,8 @@ export default function QuestionBanksPage() {
         )}
       </div>
 
-      {/* Search + Filter */}
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+      {/* Search & Filter */}
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--neutral-400)' }} />
           <input
@@ -223,87 +192,18 @@ export default function QuestionBanksPage() {
             style={{ paddingLeft: 36 }}
           />
         </div>
-        {/* Jenjang filter */}
-        {['SD','SMP','SMA'].map(j => (
-          <button key={j} onClick={() => { setFilterJenjang(filterJenjang===j?'':j); setFilterKelas(''); setFilterMapel(''); }}
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)', fontWeight: 600, fontSize: 'var(--text-sm)', cursor: 'pointer', transition: 'all 0.2s',
-              border: `2px solid ${filterJenjang===j?'var(--primary)':'var(--cream-200)'}`,
-              background: filterJenjang===j?'var(--primary)':'white',
-              color: filterJenjang===j?'white':'var(--neutral-700)' }}>
-            {j}
-          </button>
-        ))}
-        {filterJenjang && (
-          <>
-            <select className="form-input" style={{ width: 120 }} value={filterKelas} onChange={e => setFilterKelas(e.target.value)}>
-              <option value="">Semua Kelas</option>
-              {filterKelasOptions.map(k => <option key={k} value={k}>Kelas {k}</option>)}
-            </select>
-            <select className="form-input" style={{ width: 160 }} value={filterMapel} onChange={e => setFilterMapel(e.target.value)}>
-              <option value="">Semua Mapel</option>
-              {filterMapelOptions.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </>
-        )}
-        {(filterJenjang||filterKelas||filterMapel) && (
-          <button onClick={() => { setFilterJenjang(''); setFilterKelas(''); setFilterMapel(''); }}
-            style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--cream-200)', background: 'white', cursor: 'pointer', color: 'var(--neutral-500)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-sm)' }}>
-            <X size={12} /> Reset
-          </button>
-        )}
+        <select
+          className="form-select"
+          value={kelasFilter}
+          onChange={e => setKelasFilter(e.target.value)}
+          style={{ width: 150 }}
+        >
+          <option value="all">Semua Kelas</option>
+          {getKelasForJenjang(currentBank?.jenjang).map(k => (
+            <option key={k} value={k}>Kelas {k}</option>
+          ))}
+        </select>
       </div>
-
-      {/* Bulk action bar */}
-      {selectedIds.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)', background: 'rgba(139,115,85,0.08)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)', border: '1px solid rgba(139,115,85,0.2)' }}>
-          <Tag size={16} style={{ color: 'var(--primary)' }} />
-          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--primary)' }}>{selectedIds.length} soal dipilih</span>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowBulkModal(true)}>Set Jenjang/Kelas</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds([])}><X size={14} /> Batal</button>
-        </div>
-      )}
-
-      {/* Bulk Tag Modal */}
-      {showBulkModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-4)' }}>
-          <div className="card" style={{ padding: 'var(--space-6)', maxWidth: 440, width: '100%' }}>
-            <h3 style={{ marginBottom: 'var(--space-4)', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              <Tag size={18} style={{ color: 'var(--primary)' }} /> Tag Massal ({selectedIds.length} soal)
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
-              <div className="form-group">
-                <label className="form-label">Jenjang <span style={{ color: 'var(--error)' }}>*</span></label>
-                <select className="form-input" value={bulkJenjang} onChange={e => { setBulkJenjang(e.target.value); setBulkKelas(''); setBulkMapel(''); }}>
-                  <option value="">Pilih Jenjang</option>
-                  <option value="SD">SD</option><option value="SMP">SMP</option><option value="SMA">SMA</option>
-                </select>
-              </div>
-              {bulkJenjang && (
-                <>
-                  <div className="form-group">
-                    <label className="form-label">Kelas</label>
-                    <select className="form-input" value={bulkKelas} onChange={e => setBulkKelas(e.target.value)}>
-                      <option value="">Tidak diubah</option>
-                      {bulkKelasOptions.map(k => <option key={k} value={k}>Kelas {k}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Mata Pelajaran</label>
-                    <select className="form-input" value={bulkMapel} onChange={e => setBulkMapel(e.target.value)}>
-                      <option value="">Tidak diubah</option>
-                      {bulkMapelOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleBulkTag} disabled={!bulkJenjang}>Terapkan</button>
-              <button className="btn btn-secondary" onClick={() => setShowBulkModal(false)}>Batal</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add Question Form */}
       {showAddQuestion && canAddMore && (
@@ -312,6 +212,36 @@ export default function QuestionBanksPage() {
             <Plus size={18} style={{ color: 'var(--primary)' }} /> Tambah Soal Baru
           </h3>
           <form onSubmit={handleAddQuestion}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+              <div className="form-group">
+                <label className="form-label">Kelas</label>
+                <select
+                  className="form-select"
+                  value={newQuestion.kelas}
+                  onChange={e => setNewQuestion({ ...newQuestion, kelas: e.target.value })}
+                  required
+                >
+                  <option value="">Pilih Kelas</option>
+                  {getKelasForJenjang(currentBank?.jenjang).map(k => (
+                    <option key={k} value={k}>Kelas {k}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mata Pelajaran</label>
+                <select
+                  className="form-select"
+                  value={newQuestion.mataPelajaran}
+                  onChange={e => setNewQuestion({ ...newQuestion, mataPelajaran: e.target.value })}
+                  required
+                >
+                  <option value="">Pilih Mata Pelajaran</option>
+                  {getMataPelajaranList(currentBank?.jenjang).map(mp => (
+                    <option key={mp} value={mp}>{mp}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
               <label className="form-label">Pertanyaan</label>
               <textarea
@@ -325,84 +255,42 @@ export default function QuestionBanksPage() {
               />
             </div>
 
-            {/* Jenjang / Kelas / Mapel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-              <div className="form-group">
-                <label className="form-label">Jenjang</label>
-                <select className="form-input" value={newQuestion.jenjang} onChange={e => setNewQuestion({...newQuestion, jenjang: e.target.value, kelas: '', mataPelajaran: ''})}>
-                  <option value="">Pilih Jenjang</option>
-                  <option value="SD">SD</option><option value="SMP">SMP</option><option value="SMA">SMA</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Kelas</label>
-                <select className="form-input" value={newQuestion.kelas} onChange={e => setNewQuestion({...newQuestion, kelas: e.target.value})} disabled={!newQuestion.jenjang}>
-                  <option value="">Pilih Kelas</option>
-                  {newQuestion.jenjang && getKelasForJenjang(newQuestion.jenjang).map(k => <option key={k} value={k}>Kelas {k}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mata Pelajaran</label>
-                <select className="form-input" value={newQuestion.mataPelajaran} onChange={e => setNewQuestion({...newQuestion, mataPelajaran: e.target.value})} disabled={!newQuestion.jenjang}>
-                  <option value="">Pilih Mapel</option>
-                  {newQuestion.jenjang && getMataPelajaranList(newQuestion.jenjang).map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-            </div>
-
+            {/* Media Uploads */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-              {/* Media Uploads */}
+              {/* Image Upload */}
               <div className="form-group">
                 <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <ImageIcon size={14} /> Tambah Gambar (Opsional)
                 </label>
-                <div style={{ position: 'relative', overflow: 'hidden' }}>
-                   <input 
-                     type="file" 
-                     accept="image/*"
-                     onChange={(e) => handleFileUpload(e, newQuestion, setNewQuestion, 'imageUrl')}
-                     style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }}
-                   />
-                   <div style={{
-                     border: '1px dashed var(--primary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)',
-                     textAlign: 'center', background: 'rgba(139,115,85,0.05)', color: 'var(--primary)',
-                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
-                   }}>
-                     <Upload size={16} />
-                     <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pilih Gambar</span>
-                   </div>
-                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, false)}
+                  style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-600)' }}
+                />
                 {newQuestion.imageUrl && (
                   <div style={{ marginTop: 'var(--space-2)', position: 'relative', display: 'inline-block' }}>
-                    <img src={newQuestion.imageUrl} alt="Preview" style={{ height: 100, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '1px solid var(--cream-200)' }} />
-                    <button type="button" onClick={() => setNewQuestion({...newQuestion, imageUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--error)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}><X size={12} /></button>
+                    <img src={newQuestion.imageUrl} alt="Preview" style={{ height: 100, borderRadius: 'var(--radius-md)', border: '1px solid var(--cream-200)' }} />
+                    <button type="button" onClick={() => setNewQuestion({...newQuestion, imageUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={12}/></button>
                   </div>
                 )}
               </div>
+
+              {/* Audio Upload */}
               <div className="form-group">
                 <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Music size={14} /> Tambah Audio (Opsional)
+                  <Volume2 size={14} /> Tambah Audio (Opsional)
                 </label>
-                <div style={{ position: 'relative', overflow: 'hidden' }}>
-                   <input 
-                     type="file" 
-                     accept="audio/*"
-                     onChange={(e) => handleFileUpload(e, newQuestion, setNewQuestion, 'audioUrl')}
-                     style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }}
-                   />
-                   <div style={{
-                     border: '1px dashed var(--primary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)',
-                     textAlign: 'center', background: 'rgba(139,115,85,0.05)', color: 'var(--primary)',
-                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
-                   }}>
-                     <Upload size={16} />
-                     <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pilih Audio</span>
-                   </div>
-                </div>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => handleAudioUpload(e, false)}
+                  style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-600)' }}
+                />
                 {newQuestion.audioUrl && (
                   <div style={{ marginTop: 'var(--space-2)', position: 'relative' }}>
                     <audio src={newQuestion.audioUrl} controls style={{ width: '100%', height: 40 }} />
-                    <button type="button" onClick={() => setNewQuestion({...newQuestion, audioUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--error)', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', zIndex: 20 }}><X size={12} /></button>
+                    <button type="button" onClick={() => setNewQuestion({...newQuestion, audioUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={12}/></button>
                   </div>
                 )}
               </div>
@@ -471,6 +359,36 @@ export default function QuestionBanksPage() {
               <Pencil size={18} style={{ color: 'var(--primary)' }} /> Edit Soal
             </h3>
             <form onSubmit={handleEditQuestion}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
+                <div className="form-group">
+                  <label className="form-label">Kelas</label>
+                  <select
+                    className="form-select"
+                    value={editingQuestion.kelas || ''}
+                    onChange={e => setEditingQuestion({ ...editingQuestion, kelas: e.target.value })}
+                    required
+                  >
+                    <option value="">Pilih Kelas</option>
+                    {getKelasForJenjang(currentBank?.jenjang).map(k => (
+                      <option key={k} value={k}>Kelas {k}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Mata Pelajaran</label>
+                  <select
+                    className="form-select"
+                    value={editingQuestion.mataPelajaran || ''}
+                    onChange={e => setEditingQuestion({ ...editingQuestion, mataPelajaran: e.target.value })}
+                    required
+                  >
+                    <option value="">Pilih Mata Pelajaran</option>
+                    {getMataPelajaranList(currentBank?.jenjang).map(mp => (
+                      <option key={mp} value={mp}>{mp}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                 <label className="form-label">Pertanyaan</label>
                 <textarea
@@ -482,85 +400,42 @@ export default function QuestionBanksPage() {
                   style={{ resize: 'vertical' }}
                 />
               </div>
-
-            {/* Jenjang / Kelas / Mapel */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-              <div className="form-group">
-                <label className="form-label">Jenjang</label>
-                <select className="form-input" value={editingQuestion.jenjang || ''} onChange={e => setEditingQuestion({...editingQuestion, jenjang: e.target.value, kelas: '', mataPelajaran: ''})}>
-                  <option value="">Pilih Jenjang</option>
-                  <option value="SD">SD</option><option value="SMP">SMP</option><option value="SMA">SMA</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Kelas</label>
-                <select className="form-input" value={editingQuestion.kelas || ''} onChange={e => setEditingQuestion({...editingQuestion, kelas: e.target.value ? Number(e.target.value) : ''})} disabled={!editingQuestion.jenjang}>
-                  <option value="">Pilih Kelas</option>
-                  {editingQuestion.jenjang && getKelasForJenjang(editingQuestion.jenjang).map(k => <option key={k} value={k}>Kelas {k}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mata Pelajaran</label>
-                <select className="form-input" value={editingQuestion.mataPelajaran || ''} onChange={e => setEditingQuestion({...editingQuestion, mataPelajaran: e.target.value})} disabled={!editingQuestion.jenjang}>
-                  <option value="">Pilih Mapel</option>
-                  {editingQuestion.jenjang && getMataPelajaranList(editingQuestion.jenjang).map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-            </div>
-
+              {/* Media Uploads */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }}>
-                {/* Media Uploads */}
+                {/* Image Upload */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <ImageIcon size={14} /> Ubah Gambar (Opsional)
+                    <ImageIcon size={14} /> Ganti Gambar
                   </label>
-                  <div style={{ position: 'relative', overflow: 'hidden' }}>
-                     <input 
-                       type="file" 
-                       accept="image/*"
-                       onChange={(e) => handleFileUpload(e, editingQuestion, setEditingQuestion, 'imageUrl')}
-                       style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }}
-                     />
-                     <div style={{
-                       border: '1px dashed var(--primary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)',
-                       textAlign: 'center', background: 'rgba(139,115,85,0.05)', color: 'var(--primary)',
-                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
-                     }}>
-                       <Upload size={16} />
-                       <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pilih Gambar</span>
-                     </div>
-                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, true)}
+                    style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-600)' }}
+                  />
                   {editingQuestion.imageUrl && (
                     <div style={{ marginTop: 'var(--space-2)', position: 'relative', display: 'inline-block' }}>
-                      <img src={editingQuestion.imageUrl} alt="Preview" style={{ height: 100, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '1px solid var(--cream-200)' }} />
-                      <button type="button" onClick={() => setEditingQuestion({...editingQuestion, imageUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--error)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}><X size={12} /></button>
+                      <img src={editingQuestion.imageUrl} alt="Preview" style={{ height: 100, borderRadius: 'var(--radius-md)', border: '1px solid var(--cream-200)' }} />
+                      <button type="button" onClick={() => setEditingQuestion({...editingQuestion, imageUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={12}/></button>
                     </div>
                   )}
                 </div>
+
+                {/* Audio Upload */}
                 <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Music size={14} /> Ubah Audio (Opsional)
+                    <Volume2 size={14} /> Ganti Audio
                   </label>
-                  <div style={{ position: 'relative', overflow: 'hidden' }}>
-                     <input 
-                       type="file" 
-                       accept="audio/*"
-                       onChange={(e) => handleFileUpload(e, editingQuestion, setEditingQuestion, 'audioUrl')}
-                       style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer', zIndex: 10 }}
-                     />
-                     <div style={{
-                       border: '1px dashed var(--primary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)',
-                       textAlign: 'center', background: 'rgba(139,115,85,0.05)', color: 'var(--primary)',
-                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
-                     }}>
-                       <Upload size={16} />
-                       <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>Pilih Audio</span>
-                     </div>
-                  </div>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={(e) => handleAudioUpload(e, true)}
+                    style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-600)' }}
+                  />
                   {editingQuestion.audioUrl && (
                     <div style={{ marginTop: 'var(--space-2)', position: 'relative' }}>
                       <audio src={editingQuestion.audioUrl} controls style={{ width: '100%', height: 40 }} />
-                      <button type="button" onClick={() => setEditingQuestion({...editingQuestion, audioUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: 'var(--error)', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', zIndex: 20 }}><X size={12} /></button>
+                      <button type="button" onClick={() => setEditingQuestion({...editingQuestion, audioUrl: ''})} style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={12}/></button>
                     </div>
                   )}
                 </div>
@@ -658,60 +533,46 @@ export default function QuestionBanksPage() {
           return (
             <div key={q.id} className="card" style={{
               padding: 'var(--space-4)',
-              border: selectedIds.includes(q.id) ? '2px solid var(--primary)' : '1px solid var(--cream-200)',
-              background: selectedIds.includes(q.id) ? 'rgba(139,115,85,0.02)' : 'white',
+              border: '1px solid var(--cream-200)',
               transition: 'all 0.2s',
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                {/* Checkbox */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setSelectedIds(prev => prev.includes(q.id) ? prev.filter(id => id !== q.id) : [...prev, q.id]); }}
-                  style={{ padding: 4, border: 'none', background: 'none', cursor: 'pointer', color: selectedIds.includes(q.id) ? 'var(--primary)' : 'var(--neutral-300)', flexShrink: 0, marginTop: 4 }}
-                >
-                  {selectedIds.includes(q.id) ? <CheckSquare size={18} /> : <Square size={18} />}
-                </button>
-
-                <div
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)', flex: 1, cursor: 'pointer' }}
-                  onClick={() => setExpandedQuestion(isExpanded ? null : q.id)}
-                >
+              <div
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setExpandedQuestion(isExpanded ? null : q.id)}
+              >
+                <div style={{
+                  width: 32, height: 32, borderRadius: 'var(--radius-md)', flexShrink: 0,
+                  background: 'rgba(139,115,85,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--primary)', fontWeight: 700, fontSize: 'var(--text-sm)',
+                }}>
+                  {idx + 1}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: 'var(--cream-100)', color: 'var(--primary)', borderRadius: 'var(--radius-sm)' }}>
+                      Kelas {q.kelas}
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: 'var(--cream-100)', color: 'var(--primary)', borderRadius: 'var(--radius-sm)' }}>
+                      {q.mataPelajaran}
+                    </span>
+                  </div>
                   <div style={{
-                    width: 32, height: 32, borderRadius: 'var(--radius-md)', flexShrink: 0,
-                    background: 'rgba(139,115,85,0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--primary)', fontWeight: 700, fontSize: 'var(--text-sm)',
+                    fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--neutral-800)',
+                    lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap'
                   }}>
-                    {idx + 1}
+                    {q.text}
+                    {q.imageUrl && <ImageIcon size={14} style={{ color: 'var(--primary)' }} title="Ada Gambar" />}
+                    {q.audioUrl && <Volume2 size={14} style={{ color: '#8b5cf6' }} title="Ada Audio" />}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--neutral-800)', lineHeight: 1.5 }}>
-                      {q.text}
+                  {!isExpanded && (
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', marginTop: 4 }}>
+                      Jawaban: {optionLabels[q.correctIndex]} — Klik untuk lihat detail
                     </div>
-                    {/* Tags */}
-                    <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap', marginTop: 4 }}>
-                      {q.jenjang && (
-                        <span style={{ background: 'var(--primary)', color: 'white', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '10px', fontWeight: 700 }}>
-                          {q.jenjang}
-                        </span>
-                      )}
-                      {q.kelas && (
-                        <span style={{ background: 'var(--cream-100)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '10px', fontWeight: 700, border: '1px solid rgba(139,115,85,0.2)' }}>
-                          Kelas {q.kelas}
-                        </span>
-                      )}
-                      {q.mataPelajaran && (
-                        <span style={{ background: 'rgba(139,115,85,0.08)', color: 'var(--neutral-600)', padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '10px', fontWeight: 600 }}>
-                          {q.mataPelajaran}
-                        </span>
-                      )}
-                      {!isExpanded && (
-                        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)', marginLeft: 4 }}>
-                          Jawaban: {optionLabels[q.correctIndex]} — Klik untuk lihat detail
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
                   <button
@@ -744,62 +605,55 @@ export default function QuestionBanksPage() {
 
               {/* Expanded options */}
               {isExpanded && (
-                <>
+                <div style={{
+                  marginTop: 'var(--space-3)',
+                  paddingTop: 'var(--space-3)',
+                  borderTop: '1px solid var(--cream-200)',
+                }}>
                   {(q.imageUrl || q.audioUrl) && (
-                    <div style={{
-                      marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--cream-200)',
-                      display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap'
-                    }}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                       {q.imageUrl && (
-                        <div style={{ flex: 1, minWidth: 200, background: 'var(--cream-50)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--cream-200)' }}>
-                          <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4 }}>Gambar Lampiran:</p>
-                          <img src={q.imageUrl} alt="Lampiran" style={{ width: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 'var(--radius-sm)', background: 'white' }} />
+                        <div style={{ border: '1px solid var(--cream-200)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                          <img src={q.imageUrl} alt="Soal Media" style={{ maxHeight: 200, display: 'block' }} />
                         </div>
                       )}
                       {q.audioUrl && (
-                        <div style={{ flex: 1, minWidth: 200, background: 'var(--cream-50)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--cream-200)' }}>
-                          <p style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--neutral-500)', marginBottom: 4 }}>Audio Lampiran:</p>
-                          <audio src={q.audioUrl} controls style={{ width: '100%', outline: 'none' }} />
+                        <div style={{ flex: 1, minWidth: 250, display: 'flex', alignItems: 'center' }}>
+                          <audio src={q.audioUrl} controls style={{ width: '100%' }} />
                         </div>
                       )}
                     </div>
                   )}
-
-                  <div style={{
-                    marginTop: 'var(--space-3)',
-                    paddingTop: 'var(--space-3)',
-                    borderTop: '1px solid var(--cream-200)',
-                    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)',
-                  }}>
-                  {q.options.map((opt, i) => (
-                    <div key={i} style={{
-                      display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                      padding: 'var(--space-2) var(--space-3)',
-                      borderRadius: 'var(--radius-md)',
-                      background: q.correctIndex === i ? 'rgba(34,197,94,0.08)' : 'var(--cream-50)',
-                      border: `1px solid ${q.correctIndex === i ? 'rgba(34,197,94,0.3)' : 'var(--cream-200)'}`,
-                    }}>
-                      <span style={{
-                        width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                        background: q.correctIndex === i ? '#22c55e' : 'var(--cream-200)',
-                        color: q.correctIndex === i ? 'white' : 'var(--neutral-500)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 700, fontSize: 'var(--text-xs)',
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                    {q.options.map((opt, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+                        padding: 'var(--space-2) var(--space-3)',
+                        borderRadius: 'var(--radius-md)',
+                        background: q.correctIndex === i ? 'rgba(34,197,94,0.08)' : 'var(--cream-50)',
+                        border: `1px solid ${q.correctIndex === i ? 'rgba(34,197,94,0.3)' : 'var(--cream-200)'}`,
                       }}>
-                        {optionLabels[i]}
-                      </span>
-                      <span style={{
-                        fontSize: 'var(--text-sm)',
-                        color: q.correctIndex === i ? '#16a34a' : 'var(--neutral-600)',
-                        fontWeight: q.correctIndex === i ? 600 : 400,
-                      }}>
-                        {opt}
-                        {q.correctIndex === i && ' ✓'}
-                      </span>
-                    </div>
-                  ))}
+                        <span style={{
+                          width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                          background: q.correctIndex === i ? '#22c55e' : 'var(--cream-200)',
+                          color: q.correctIndex === i ? 'white' : 'var(--neutral-500)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, fontSize: 'var(--text-xs)',
+                        }}>
+                          {optionLabels[i]}
+                        </span>
+                        <span style={{
+                          fontSize: 'var(--text-sm)',
+                          color: q.correctIndex === i ? '#16a34a' : 'var(--neutral-600)',
+                          fontWeight: q.correctIndex === i ? 600 : 400,
+                        }}>
+                          {opt}
+                          {q.correctIndex === i && ' ✓'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
             </div>
           );
