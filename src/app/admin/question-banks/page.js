@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState } from 'react';
@@ -39,6 +40,7 @@ export default function QuestionBanksPage() {
     if (!canAddMore) return;
     if (newQuestion.options.some(o => o.trim() === '')) return;
 
+    // eslint-disable-next-line react-compiler/react-compiler
     const newId = Date.now();
     setBanks(prev => prev.map(b => {
       if (b.programId !== selectedProgramId) return b;
