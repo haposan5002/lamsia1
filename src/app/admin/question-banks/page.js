@@ -8,8 +8,9 @@ import {
   AlertTriangle, BookOpen, ChevronDown, ChevronUp, Image as ImageIcon, Volume2
 } from 'lucide-react';
 
+let nextId = 10000;
+
 export default function QuestionBanksPage() {
-  "use no memo";
   const [banks, setBanks] = useState(initialBanks);
   const [selectedProgramId, setSelectedProgramId] = useState(1);
   const [search, setSearch] = useState('');
@@ -41,7 +42,7 @@ export default function QuestionBanksPage() {
     if (!canAddMore) return;
     if (newQuestion.options.some(o => o.trim() === '')) return;
 
-    const newId = Date.now();
+    const newId = nextId++;
     setBanks(prev => prev.map(b => {
       if (b.programId !== selectedProgramId) return b;
       return {
