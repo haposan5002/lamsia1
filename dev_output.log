@@ -1,0 +1,38 @@
+
+> la-masia-academy@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.88.60:3000
+✓ Ready in 442ms
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/haposansiregar/bun.lock as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/haposansiregar/Documents/TUGAS WEB BIMBEL/la-masia-academy/package-lock.json
+
+
+○ Compiling /register ...
+ GET /register 200 in 70s (next.js: 70s, application-code: 257ms)
+ GET / 200 in 1894ms (next.js: 1716ms, application-code: 179ms)
+ GET / 200 in 69ms (next.js: 3ms, application-code: 66ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /programs 200 in 547ms (next.js: 421ms, application-code: 125ms)
+ GET /programs 200 in 51ms (next.js: 5ms, application-code: 46ms)
+ GET /register 200 in 17ms (next.js: 3ms, application-code: 14ms)
+ GET /register 200 in 63ms (next.js: 5ms, application-code: 58ms)
+ GET /login 200 in 221ms (next.js: 207ms, application-code: 14ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /admin 200 in 244ms (next.js: 228ms, application-code: 16ms)
+○ Compiling /admin/registrations ...
+ GET /admin/registrations 200 in 3.6s (next.js: 3.6s, application-code: 40ms)
+ GET /admin/registrations 200 in 36ms (next.js: 4ms, application-code: 32ms)
+ GET /admin/registrations/1 200 in 5.8s (next.js: 5.8s, application-code: 25ms)
+ GET /admin 200 in 28ms (next.js: 9ms, application-code: 18ms)
+ GET /admin/students 200 in 2.2s (next.js: 2.1s, application-code: 28ms)
+ GET /admin/students 200 in 14ms (next.js: 1393µs, application-code: 12ms)
+ GET /admin/students 200 in 27ms (next.js: 6ms, application-code: 21ms)
+○ Compiling /admin/materials ...
+[?25h

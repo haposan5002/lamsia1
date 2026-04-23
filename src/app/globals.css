@@ -19,6 +19,12 @@
   --primary-light: #A68E6A;
   --primary-lighter: #C4AD8A;
 
+  /* Complementary Colors */
+  --forest-green: #1B3B36;
+  --forest-green-light: #2A5A52;
+  --gold: #D4AF37;
+  --burgundy: #4A1525;
+
   /* Neutrals */
   --neutral-50: #FAFAFA;
   --neutral-100: #F5F5F5;
@@ -42,8 +48,8 @@
   --info-light: #DBEAFE;
 
   /* Typography */
-  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
-  --font-serif: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-sans: var(--font-outfit), 'Outfit', system-ui, sans-serif;
+  --font-serif: var(--font-outfit), 'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Font Sizes */
@@ -2087,3 +2093,80 @@ img {
   }
 }
 
+
+/* ===== Scrollytelling Utilities ===== */
+.scrolly-container {
+  position: relative;
+  width: 100%;
+  /* Height will be set inline, e.g., 500vh */
+}
+
+.scrolly-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scrolly-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scrolly-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scrolly-text-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-8);
+  pointer-events: auto;
+}
+
+.scrolly-title {
+  font-size: var(--text-5xl);
+  font-weight: 700;
+  color: var(--forest-green);
+  margin-bottom: var(--space-4);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.scrolly-subtitle {
+  font-size: var(--text-2xl);
+  color: var(--primary-dark);
+  margin-bottom: var(--space-6);
+  max-width: 600px;
+}
+
+.scrolly-content {
+  font-size: var(--text-lg);
+  color: var(--neutral-700);
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+/* Enhancements for seamless blending */
+.scrolly-text-section.right-align {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.scrolly-text-section.center-align {
+  align-items: center;
+  text-align: center;
+}

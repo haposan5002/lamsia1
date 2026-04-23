@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { 
   LayoutDashboard, Users, FileText, BookOpen, MessageSquare, 
-  LogOut, GraduationCap, Menu, X
+  LogOut, GraduationCap, Menu, X, Brain, Package, ClipboardList
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -15,6 +15,9 @@ const navItems = [
   { href: '/admin/registrations', label: 'Pendaftaran', icon: FileText },
   { href: '/admin/students', label: 'Siswa', icon: Users },
   { href: '/admin/materials', label: 'Materi', icon: BookOpen },
+  { href: '/admin/question-banks', label: 'Bank Soal', icon: Brain },
+  { href: '/admin/tryouts', label: 'Tryout', icon: ClipboardList },
+  { href: '/admin/packages', label: 'Paket Program', icon: Package },
   { href: '/admin/feedback', label: 'Feedback', icon: MessageSquare },
 ];
 

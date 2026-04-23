@@ -1,10 +1,10 @@
-import { Inter } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 
-const inter = Inter({ 
+const outfit = Outfit({ 
   subsets: ['latin'], 
-  variable: '--font-inter',
+  variable: '--font-outfit',
   display: 'swap',
 });
 
@@ -16,8 +16,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" className={`${inter.variable}`}>
-      <body>
+    <html lang="id" className={`${outfit.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
+      <body suppressHydrationWarning>
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -61,6 +61,18 @@ export default async function ProgramDetailPage({ params }) {
               </div>
 
               <div style={{ padding: 'var(--space-8)' }}>
+                {program.jenjang && (
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-3)', flexWrap: 'wrap' }}>
+                    <span style={{ background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '999px', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
+                      {program.jenjang}
+                    </span>
+                    {program.kelasTersedia?.length > 0 && (
+                      <span style={{ background: 'var(--cream-100)', color: 'var(--primary-dark)', padding: '4px 12px', borderRadius: '999px', fontSize: 'var(--text-xs)', fontWeight: 600, border: '1px solid rgba(139,115,85,0.2)' }}>
+                        Kelas {program.kelasTersedia.join(', ')}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <h1 style={{ marginBottom: 'var(--space-3)' }}>{program.name}</h1>
                 <p style={{ fontSize: 'var(--text-md)', marginBottom: 'var(--space-6)' }}>{program.description}</p>
 

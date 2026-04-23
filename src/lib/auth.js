@@ -11,15 +11,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check localStorage for saved session
-    const saved = localStorage.getItem('lamasia_user');
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem('lamasia_user');
+    const timer = setTimeout(() => {
+      const saved = localStorage.getItem('lamasia_user');
+      if (saved) {
+        try {
+          setUser(JSON.parse(saved));
+        } catch {
+          localStorage.removeItem('lamasia_user');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const login = (email, password) => {

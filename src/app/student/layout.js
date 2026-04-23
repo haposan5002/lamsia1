@@ -8,13 +8,14 @@ import { students } from '@/lib/data';
 import StudentRenewalPopup from '@/components/StudentRenewalPopup';
 import { 
   LayoutDashboard, Calendar, BookOpen, MessageSquare, 
-  LogOut, GraduationCap, Menu, X, RefreshCw
+  LogOut, GraduationCap, Menu, X, RefreshCw, ClipboardList
 } from 'lucide-react';
 
 const navItems = [
   { href: '/student', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/student/schedule', label: 'Jadwal', icon: Calendar },
   { href: '/student/materials', label: 'Materi', icon: BookOpen },
+  { href: '/student/tryout', label: 'Tryout', icon: ClipboardList },
   { href: '/student/feedback', label: 'Feedback', icon: MessageSquare },
   { href: '/student/renew', label: 'Perpanjang Paket', icon: RefreshCw },
 ];

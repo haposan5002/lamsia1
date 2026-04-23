@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ChatbotWidget from '@/components/ChatbotWidget';
+import ScrollytellingLayout from '@/components/ScrollytellingLayout';
 import { programs, formatCurrency } from '@/lib/data';
 import { 
   GraduationCap, BookOpen, Trophy, Clock, Users, Star, 
@@ -25,81 +26,8 @@ export default function HomePage() {
     <>
       <Navbar />
       <main>
-        {/* Hero Section */}
-        <section className="hero">
-          <div className="hero-slider">
-            <div className="hero-slide"></div>
-            <div className="hero-slide"></div>
-            <div className="hero-slide"></div>
-            <div className="hero-slide"></div>
-          </div>
-          <div className="container">
-            <div className="hero-content">
-              <div className="hero-badge">
-                <Sparkles size={14} />
-                Pendaftaran Dibuka — Kuota Terbatas
-              </div>
-              <h1>
-                Raih Prestasi Terbaikmu Bersama{' '}
-                <span className="accent">La Masia</span> Academy
-              </h1>
-              <p>
-                Bimbingan belajar premium dengan pendekatan personal, tutor berpengalaman, 
-                dan metode pembelajaran yang teruji untuk membantu kamu mencapai target akademik.
-              </p>
-              <div className="hero-actions">
-                <Link href="/register" className="btn btn-primary btn-lg">
-                  Daftar Sekarang <ArrowRight size={18} />
-                </Link>
-                <Link href="/programs" className="btn btn-secondary btn-lg">
-                  Lihat Program
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="section">
-          <div className="container">
-            <div className="section-header">
-              <h2>Mengapa La Masia Academy?</h2>
-              <p>
-                Kami berkomitmen memberikan pengalaman belajar terbaik dengan berbagai keunggulan
-              </p>
-            </div>
-            <div className="features-grid">
-              <div className="feature-card card">
-                <div className="feature-icon">
-                  <Users size={24} />
-                </div>
-                <h3>Tutor Berpengalaman</h3>
-                <p>Tutor pilihan dengan pengalaman mengajar lebih dari 5 tahun dan track record meluluskan siswa ke PTN favorit.</p>
-              </div>
-              <div className="feature-card card">
-                <div className="feature-icon">
-                  <Target size={24} />
-                </div>
-                <h3>Pendekatan Personal</h3>
-                <p>Setiap siswa mendapat jadwal, materi, dan feedback yang disesuaikan dengan kebutuhan dan progress belajarnya.</p>
-              </div>
-              <div className="feature-card card">
-                <div className="feature-icon">
-                  <Brain size={24} />
-                </div>
-                <h3>Metode Teruji</h3>
-                <p>Kurikulum terstruktur dengan tryout berkala, analisis skor, dan strategi pengerjaan soal yang efektif.</p>
-              </div>
-              <div className="feature-card card">
-                <div className="feature-icon">
-                  <Shield size={24} />
-                </div>
-                <h3>Platform Digital</h3>
-                <p>Akses materi belajar, jadwal, dan feedback kapan saja melalui portal siswa yang modern dan mudah digunakan.</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Scrollytelling Hero & Features */}
+        <ScrollytellingLayout />
 
         {/* Programs Section */}
         <section className="section section-alt">
