@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 export default function QuestionBanksPage() {
+  "use no memo";
   const [banks, setBanks] = useState(initialBanks);
   const [selectedProgramId, setSelectedProgramId] = useState(1);
   const [search, setSearch] = useState('');
@@ -40,7 +41,6 @@ export default function QuestionBanksPage() {
     if (!canAddMore) return;
     if (newQuestion.options.some(o => o.trim() === '')) return;
 
-    // eslint-disable-next-line react-compiler/react-compiler
     const newId = Date.now();
     setBanks(prev => prev.map(b => {
       if (b.programId !== selectedProgramId) return b;
